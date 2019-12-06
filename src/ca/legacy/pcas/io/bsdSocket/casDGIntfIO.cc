@@ -41,7 +41,6 @@ static void  forcePort (ELLLIST *pList, unsigned short port)
     }
 }
 
-
 casDGIntfIO::casDGIntfIO ( caServerI & serverIn, clientBufMemoryManager & memMgr,
     const caNetAddr & addr, bool autoBeaconAddr, bool addConfigBeaconAddr ) :
     casDGClient ( serverIn, memMgr )
@@ -54,6 +53,7 @@ casDGIntfIO::casDGIntfIO ( caServerI & serverIn, clientBufMemoryManager & memMgr
     
     ellInit ( &BCastAddrList );
     ellInit ( &this->beaconAddrList );
+    ignoreNets= NULL;
     
     if ( ! osiSockAttach () ) {
         throw S_cas_internal;
@@ -182,6 +182,23 @@ casDGIntfIO::casDGIntfIO ( caServerI & serverIn, clientBufMemoryManager & memMgr
             free ( pNode );
         }
     }
+    {
+        ELLLIST temp = ELLLIST_INIT;
+        size_t idx = 0;
+        osiSockNetNode *node;
+        networkList ( &temp, &EPICS_CAS_IGNORE_NET_LIST );
+        this->ignoreNets= new network_spec[1+ellCount(&temp)];
+
+        while((node=(osiSockNetNode*)ellGet(&temp))!=NULL)
+        {
+            (this->ignoreNets)[idx].addr= node->net.addr;
+            (this->ignoreNets)[idx].mask= node->net.mask;
+            idx++;
+            free(node);
+        }
+        (this->ignoreNets)[idx].addr= 0;
+        (this->ignoreNets)[idx].mask= 0;
+    }
 
     //
     // Solaris specific:
@@ -268,6 +285,8 @@ casDGIntfIO::~casDGIntfIO()
         pEntry->~ipIgnoreEntry ();
         this->ipIgnoreEntryFreeList.release ( pEntry );
     }
+    if (this->ignoreNets)
+        free(this->ignoreNets);
     
     osiSockRelease ();
 }
@@ -346,6 +365,18 @@ casDGIntfIO::osdRecv ( char * pBufIn, bufSizeT size,
                 }
             }
         }
+        if ( this->ignoreNets ) {
+            if ( addr.sa_family == AF_INET ) {
+                sockaddr_in * pIP = 
+                    reinterpret_cast < sockaddr_in * > ( & addr );
+                network_spec *spec= this->ignoreNets;
+                for(; spec->addr; spec++) {
+                    if ((pIP->sin_addr.s_addr & spec->mask)==(spec->addr & spec->mask))
+                        return casFillNone;
+                }
+            }
+        }
+
         fromOut = addr;
         actualSize = static_cast < bufSizeT > ( status );
         return casFillProgress;

@@ -14,6 +14,12 @@
 #include "casDGClient.h"
 #include "ipIgnoreEntry.h"
 
+typedef struct
+  {
+    epicsUInt32 addr;
+    epicsUInt32 mask;
+  } network_spec;
+
 class casDGIntfIO : public casDGClient {
 public:
 	casDGIntfIO ( caServerI & serverIn, clientBufMemoryManager &, 
@@ -43,6 +49,7 @@ public:
 private:
     tsFreeList < ipIgnoreEntry, 128 > ipIgnoreEntryFreeList;
     resTable < ipIgnoreEntry, ipIgnoreEntry > ignoreTable;
+    network_spec *ignoreNets;
 	ELLLIST beaconAddrList;
 	SOCKET sock;
 	SOCKET bcastRecvSock; // fix for solaris bug

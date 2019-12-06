@@ -450,6 +450,24 @@ void rsrv_build_addr_lists(void)
         }
         casIgnoreAddrs[idx] = 0;
     }
+    {
+        ELLLIST temp = ELLLIST_INIT;
+        size_t idx = 0;
+        osiSockNetNode *node;
+        networkList ( &temp, &EPICS_CAS_IGNORE_NET_LIST );
+        casIgnoreNets = callocMustSucceed(1+ellCount(&temp), sizeof(casIgnoreNets[0]), "casIgnoreNets");
+
+        while((node=(osiSockNetNode*)ellGet(&temp))!=NULL)
+        {
+            casIgnoreNets[idx].addr= node->net.addr;
+            casIgnoreNets[idx].mask= node->net.mask;
+            idx++;
+            free(node);
+        }
+        casIgnoreNets[idx].addr= 0;
+        casIgnoreNets[idx].mask= 0;
+    }
+
 }
 
 static dbServer rsrv_server = {
@@ -887,6 +905,20 @@ static void log_one_client (struct client *client, unsigned level)
     }
 }
 
+static char *casIpToStr(epicsUInt32 addr)
+{
+    static char buf[20];
+    epicsUInt32 haddr;
+    haddr= ntohl(addr);
+    sprintf(buf, "%lu.%lu.%lu.%lu", 
+            (unsigned long)( haddr >> 24        ), 
+            (unsigned long)((haddr >> 16) & 0xFF), 
+            (unsigned long)((haddr >>  8) & 0xFF), 
+            (unsigned long)( haddr        & 0xFF)
+           );
+    return buf;
+}
+
 /*
  *  casr()
  */
@@ -1000,6 +1032,16 @@ void casr (unsigned level)
                 printf("    %s\n", buf);
             }
         }
+        if (casIgnoreNets[0].addr) { /* 0 indicates end of array */
+            int i;
+            printf("Ignoring UDP messages from networks\n");
+            for(i=0; casIgnoreNets[i].addr; i++)
+            {
+                printf("addr: %s  ", casIpToStr(casIgnoreNets[i].addr));
+                printf("mask: %s\n", casIpToStr(casIgnoreNets[i].mask));
+            }
+        }
+
     }
 
     if (level>=4u) {
