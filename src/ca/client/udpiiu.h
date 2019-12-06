@@ -170,6 +170,7 @@ private:
     unsigned nBytesInXmitBuf;
     unsigned nTimers;
     unsigned beaconAnomalyTimerIndex;
+    osiSockNet *ignoreNets;
     ca_uint32_t sequenceNumber;
     ca_uint32_t lastReceivedSeqNo;
     SOCKET sock;
