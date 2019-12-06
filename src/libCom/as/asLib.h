@@ -12,6 +12,8 @@
 #ifndef INCasLibh
 #define INCasLibh
 
+#include <epicsTypes.h>
+
 #include "shareLib.h"
 #include "ellLib.h"
 #include "errMdef.h"
@@ -79,10 +81,10 @@ epicsShareFunc void epicsShareAPI asPutMemberPvt(
 /*client must provide permanent storage for user and host*/
 epicsShareFunc long epicsShareAPI asAddClient(
     ASCLIENTPVT *asClientPvt,ASMEMBERPVT asMemberPvt,
-    int asl,const char *user,char *host);
+    int asl,const char *user,char *host, epicsUInt32 ip_addr);
 /*client must provide permanent storage for user and host*/
 epicsShareFunc long epicsShareAPI asChangeClient(
-    ASCLIENTPVT asClientPvt,int asl,const char *user,char *host);
+    ASCLIENTPVT asClientPvt,int asl,const char *user,char *host, epicsUInt32 ip_addr);
 epicsShareFunc long epicsShareAPI asRemoveClient(ASCLIENTPVT *asClientPvt);
 epicsShareFunc void * epicsShareAPI asGetClientPvt(ASCLIENTPVT asClientPvt);
 epicsShareFunc void epicsShareAPI asPutClientPvt(
@@ -104,6 +106,8 @@ epicsShareFunc int epicsShareAPI asDumpUag(const char *uagname);
 epicsShareFunc int epicsShareAPI asDumpUagFP(FILE *fp,const char *uagname);
 epicsShareFunc int epicsShareAPI asDumpHag(const char *hagname);
 epicsShareFunc int epicsShareAPI asDumpHagFP(FILE *fp,const char *hagname);
+epicsShareFunc int epicsShareAPI asDumpIPag(const char *ipagname);
+epicsShareFunc int epicsShareAPI asDumpIPagFP(FILE *fp,const char *ipagname);
 epicsShareFunc int epicsShareAPI asDumpRules(const char *asgname);
 epicsShareFunc int epicsShareAPI asDumpRulesFP(FILE *fp,const char *asgname);
 epicsShareFunc int epicsShareAPI asDumpMem(const char *asgname,
@@ -112,6 +116,7 @@ epicsShareFunc int epicsShareAPI asDumpMemFP(FILE *fp,const char *asgname,
     void (*memcallback)(ASMEMBERPVT,FILE *),int clients);
 epicsShareFunc int epicsShareAPI asDumpHash(void);
 epicsShareFunc int epicsShareAPI asDumpHashFP(FILE *fp);
+epicsShareFunc int asScanIp(const char *dotted_ip, epicsUInt32 *addr);
 
 epicsShareFunc void * epicsShareAPI asTrapWriteBeforeWithData(
     const char *userid, const char *hostid, void *addr,
@@ -122,6 +127,7 @@ epicsShareFunc void epicsShareAPI asTrapWriteAfterWrite(void *pvt);
 #define S_asLib_clientsExist 	(M_asLib| 1) /*Client Exists*/
 #define S_asLib_noUag 		(M_asLib| 2) /*User Access Group does not exist*/
 #define S_asLib_noHag 		(M_asLib| 3) /*Host Access Group does not exist*/
+#define S_asLib_noIPag 		(M_asLib|15) /*IP Access Group does not exist*/
 #define S_asLib_noAccess	(M_asLib| 4) /*access security: no access allowed*/
 #define S_asLib_noModify	(M_asLib| 5) /*access security: no modification allowed*/
 #define S_asLib_badConfig	(M_asLib| 6) /*access security: bad configuration file*/
@@ -144,8 +150,9 @@ struct gphPvt;
 
 /*Base pointers for access security*/
 typedef struct asBase{
-	ELLLIST	uagList;
-	ELLLIST	hagList;
+	ELLLIST	uagList;  /*List of UAG*/
+	ELLLIST	hagList;  /*List of HAG*/      
+	ELLLIST	ipagList; /*List of IPAG*/      
 	ELLLIST	asgList;
 	struct gphPvt *phash;
 } ASBASE;
@@ -167,11 +174,27 @@ typedef struct{
 	ELLNODE	node;
 	char	*host;
 } HAGNAME;
+
 typedef struct hag{
 	ELLNODE	node;
 	char	*name;
 	ELLLIST	list;	/*list of HAGNAME*/
 } HAG;
+
+/* A sorted list of unique integers used to hold 
+ * IP addresses */
+typedef struct addrlist{
+        epicsUInt32 *addrs;
+        int         n_addrs;
+        int         n_allocated;
+} ADDRLIST;
+
+typedef struct ipag{
+        ELLNODE  node;
+	char	 *name;
+        ADDRLIST addrlist;  /*list of IP addresses*/
+} IPAG;
+
 /*Defs for Access SecurityGroups*/
 typedef struct {
 	ELLNODE	node;
@@ -181,6 +204,10 @@ typedef struct {
 	ELLNODE	node;
 	HAG	*phag;
 }ASGHAG;
+typedef struct {
+	ELLNODE	node;
+	IPAG	*pipag;
+}ASGIPAG;
 #define AS_TRAP_WRITE 1
 typedef struct{
 	ELLNODE		node;
@@ -190,8 +217,9 @@ typedef struct{
 	int		result;  /*Result of calc converted to TRUE/FALSE*/
 	char		*calc;
 	void		*rpcl;
-	ELLLIST		uagList; /*List of ASGUAG*/
-	ELLLIST		hagList; /*List of ASGHAG*/
+	ELLLIST		uagList;  /*List of ASGUAG*/
+	ELLLIST		hagList;  /*List of ASGHAG*/
+	ELLLIST		ipagList; /*List of ASGIPAG*/
 	int		trapMask;
 } ASGRULE;
 typedef struct{
@@ -225,6 +253,7 @@ typedef struct asgClient {
 	ASGMEMBER	*pasgMember;
 	const char	*user;
 	char	        *host;
+        epicsUInt32     ip_addr;
 	void		*userPvt;
 	ASCLIENTCALLBACK pcallback;
 	int		level;

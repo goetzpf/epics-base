@@ -16,6 +16,7 @@
 #ifndef casChannelIh
 #define casChannelIh
 
+#include <epicsTypes.h>
 #include "casPVI.h"
 #include "casEvent.h"
 #include "chanIntfForPV.h"
@@ -46,7 +47,7 @@ public:
     const gddEnumStringTable & enumStringTable () const;
     ca_uint32_t getMaxElem () const;
     void setOwner ( const char * const pUserName, 
-        const char * const pHostName );
+                    const char * const pHostName, epicsUInt32 ip_addr );
     bool readAccess () const;
     bool writeAccess () const;
     bool confirmationRequested () const;
@@ -114,9 +115,10 @@ inline void casChannelI::clearOutstandingReads ()
 }
 
 inline void casChannelI::setOwner ( const char * const pUserName, 
-    const char * const pHostName )
+                                    const char * const pHostName,
+                                    epicsUInt32 ip_addr)
 {
-    this->chan.setOwner ( pUserName, pHostName );
+    this->chan.setOwner ( pUserName, pHostName, ip_addr );
 }
 
 inline bool casChannelI::readAccess () const

@@ -14,6 +14,7 @@
  */
 
 #define epicsExportSharedSymbols
+#include <epicsTypes.h>
 #include "casdef.h"
 #include "casChannelI.h"
 
@@ -47,7 +48,8 @@ casPV * casChannel::getPV ()
 }
 
 void casChannel::setOwner ( const char * const /* pUserName */, 
-	const char * const /* pHostName */ )
+	                    const char * const /* pHostName */,
+	                    epicsUInt32 ip_addr)
 {
 	//
 	// NOOP

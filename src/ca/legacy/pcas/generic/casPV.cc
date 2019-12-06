@@ -14,6 +14,7 @@
  */
 
 #define epicsExportSharedSymbols
+#include <epicsTypes.h>
 #include "casPVI.h"
 
 casPV::casPV () : 
@@ -58,7 +59,8 @@ void casPV::destroy ()
 // casPV::createChannel()
 //
 casChannel *casPV::createChannel (
-    const casCtx &ctx, const char * const, const char * const )
+    const casCtx &ctx, const char * const, const char * const,
+    epicsUInt32 ip_addr )
 {
 	return new casChannel ( ctx );
 }

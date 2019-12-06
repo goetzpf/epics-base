@@ -21,6 +21,8 @@
 #   undef epicsExportSharedSymbols
 #endif
 
+#include <epicsTypes.h>
+
 // external headers included here
 #include "tsSLList.h"
 #include "epicsMutex.h"
@@ -77,7 +79,8 @@ public:
     caStatus write ( const casCtx & ctx, const gdd & value );
     caStatus writeNotify ( const casCtx & ctx, const gdd & value );
     casChannel * createChannel ( const casCtx & ctx,
-        const char * const pUserName, const char * const pHostName );
+        const char * const pUserName, const char * const pHostName,
+        epicsUInt32 ip_addr);
     aitEnum bestExternalType () const;
     const char * getName () const;
     void casPVDestroyNotify ();

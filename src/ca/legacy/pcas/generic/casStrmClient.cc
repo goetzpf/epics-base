@@ -78,6 +78,7 @@ casStrmClient::casStrmClient (
     _clientAddr ( clientAddr ),
     pUserName ( 0 ),
     pHostName ( 0 ),
+    ip_addr ( clientAddr.getSockIP().sin_addr.s_addr ),
     incommingBytesToDrain ( 0 ),
     pendingResponseStatus ( S_cas_success ),
     minor_version_number ( 0 ),
@@ -1714,8 +1715,12 @@ caStatus casStrmClient::createChanResponse (
     //
     // create server tool XXX derived from casChannel
     //
+    // Note; pUserName, pHostName and ip_addr probably still have their default
+    // values, when this is called:
     casChannel * pChan = pvar.getPV()->pPVI->createChannel ( 
-        ctxIn, this->pUserName, this->pHostName );
+        ctxIn, this->pUserName, this->pHostName, this->ip_addr );
+
+
     if ( ! pChan ) {
         pvar.getPV()->pPVI->deleteSignal();
         return this->channelCreateFailedResp ( 

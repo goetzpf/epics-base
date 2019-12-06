@@ -15,6 +15,8 @@
 #   undef epicsExportSharedSymbols
 #endif
 
+#include <epicsTypes.h>
+
 #include "epicsTime.h"
 
 #ifdef epicsExportSharedSymbols_casStrmClienth
@@ -61,6 +63,7 @@ private:
     caNetAddr _clientAddr;
     char * pUserName;
     char * pHostName;
+    epicsUInt32 ip_addr;
     smartGDDPointer pValueRead;
     unsigned incommingBytesToDrain;
     caStatus pendingResponseStatus;
